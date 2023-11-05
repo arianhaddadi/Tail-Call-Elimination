@@ -1,6 +1,8 @@
 int foo() {}
 
 int main() {
-  foo();
-  return 0;
+    goto label1;
+    label1:
+    printf("here");
+    return foo();
 }
