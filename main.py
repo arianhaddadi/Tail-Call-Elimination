@@ -1,4 +1,5 @@
 from pycparser import parse_file, c_generator, c_ast
+from copy import deepcopy
 
 
 class Parameter:
@@ -21,13 +22,21 @@ class FunctionInfo:
 
 
 def get_input_output_struct(function):
-    struct = c_ast.Struct()
+    name = f'{function.decl.name}_ios'
+    return_type = deepcopy(function.decl.type.type)
+    return_type.declname = "result"
+    return_variable = c_ast.Decl("result", [], [], [], [], return_type, None, None)
+    decls = [return_variable]
+    if function.decl.type.args is not None:
+        decls += function.decl.type.args.params
+    struct_type = c_ast.Struct(name, decls)
+    struct = c_ast.Decl(None, [], [], [], [], struct_type, None, None)
+    return struct
 
 
 def add_to_involved_functions(function, involved_functions, index):
     input_output_struct = get_input_output_struct(function)
     involved_functions[function.decl.name] = FunctionInfo(function, index, input_output_struct)
-    pass
 
 
 def identify_involved_functions(ast, func_def_map):
@@ -41,7 +50,7 @@ def identify_involved_functions(ast, func_def_map):
                         add_to_involved_functions(item, involved_functions, index)
                         index += 1
                     if block_item.expr.name not in involved_functions:
-                        add_to_involved_functions(func_def_map[block_item.expr.name], involved_functions, index)
+                        add_to_involved_functions(func_def_map[block_item.expr.name.name], involved_functions, index)
                         index += 1
                     break
     return involved_functions

@@ -1,4 +1,6 @@
-int foo() {}
+int foo(int x, int y) {
+    return 2;
+}
 
 int main() {
     goto label1;
