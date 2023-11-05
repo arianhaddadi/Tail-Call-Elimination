@@ -1,14 +1,17 @@
 from pycparser import parse_file, c_generator, c_ast
 
+
 class Parameter:
     def __init__(self, type, name):
         self.type = type
         self.name = name
 
+
 class FunctionSignature:
-    def __init__(self, params, returnType):
+    def __init__(self, params, return_type):
         self.params = params
-        self.returnType = returnType
+        self.returnType = return_type
+
 
 class FunctionInfo:
     def __init__(self, function_definition, index, input_output_struct):
@@ -16,13 +19,16 @@ class FunctionInfo:
         self.index = index
         self.input_output_struct = input_output_struct
 
+
 def get_input_output_struct(function):
-    pass
+    struct = c_ast.Struct()
+
 
 def add_to_involved_functions(function, involved_functions, index):
     input_output_struct = get_input_output_struct(function)
     involved_functions[function.decl.name] = FunctionInfo(function, index, input_output_struct)
     pass
+
 
 def identify_involved_functions(ast, func_def_map):
     involved_functions = dict()
@@ -40,12 +46,14 @@ def identify_involved_functions(ast, func_def_map):
                     break
     return involved_functions
 
+
 def get_functions_def_map(ast):
     func_def_map = dict()
     for item in ast.ext:
         if isinstance(item, c_ast.FuncDef):
             func_def_map[item.decl.name] = item
     return func_def_map
+
 
 def remove_tail_calls(filename):
     ast = parse_file(filename, use_cpp=False)
