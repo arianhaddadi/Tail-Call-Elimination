@@ -15,13 +15,13 @@ class FunctionSignature:
 
 
 class FunctionInfo:
-    def __init__(self, function_definition, index, input_output_struct):
+    def __init__(self, function_definition, index, call_struct):
         self.function_definition = function_definition
         self.index = index
-        self.input_output_struct = input_output_struct
+        self.call_struct = call_struct
 
 
-def get_input_output_struct(function):
+def get_call_struct(function):
     name = f'{function.decl.name}_ios'
     return_type = deepcopy(function.decl.type.type)
     return_type.declname = "result"
@@ -35,8 +35,8 @@ def get_input_output_struct(function):
 
 
 def add_to_involved_functions(function, involved_functions, index):
-    input_output_struct = get_input_output_struct(function)
-    involved_functions[function.decl.name] = FunctionInfo(function, index, input_output_struct)
+    call_struct = get_call_struct(function)
+    involved_functions[function.decl.name] = FunctionInfo(function, index, call_struct)
 
 
 def identify_involved_functions(ast, func_def_map):
@@ -64,10 +64,25 @@ def get_functions_def_map(ast):
     return func_def_map
 
 
+def get_block_call_struct(involved_functions):
+    name = "block_call"
+    decls = []
+    for function in involved_functions:
+        function_call_struct = involved_functions[function].call_struct
+        struct_type = c_ast.Struct(function_call_struct.type.name, None)
+        type_declaration = c_ast.TypeDecl(f"{function}_call", [], None, struct_type)
+        decl = c_ast.Decl(f"{function}_call", [], [], [], [], type_declaration, None, None)
+        decls.append(decl)
+    struct_type = c_ast.Struct(name, decls)
+    struct = c_ast.Decl(None, [], [], [], [], struct_type, None, None)
+    return struct
+
 def remove_tail_calls(filename):
     ast = parse_file(filename, use_cpp=False)
     func_def_map = get_functions_def_map(ast)
     involved_functions = identify_involved_functions(ast, func_def_map)
+    block_call_struct = get_block_call_struct(involved_functions)
+    # print(c_generator.CGenerator().visit(block_call_struct))
     pass
 
 
