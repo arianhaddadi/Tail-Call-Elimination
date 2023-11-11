@@ -45,9 +45,9 @@ def get_function_call_struct(function):
     return struct
 
 
-def add_to_involved_functions(function, involved_functions, index):
+def generate_function_info(function, index):
     function_call_struct = get_function_call_struct(function)
-    involved_functions[function.decl.name] = FunctionInfo(function, index, function_call_struct)
+    return FunctionInfo(function, index, function_call_struct)
 
 
 def identify_involved_functions(ast, func_def_map):
@@ -57,11 +57,13 @@ def identify_involved_functions(ast, func_def_map):
         if isinstance(item, c_ast.FuncDef) and item.body.block_items is not None:
             for block_item in item.body.block_items:
                 if isinstance(block_item, c_ast.Return) and isinstance(block_item.expr, c_ast.FuncCall):
-                    if item.decl.name not in involved_functions:
-                        add_to_involved_functions(item, involved_functions, index)
+                    caller_function_name = item.decl.name
+                    called_function_name = block_item.expr.name.name
+                    if caller_function_name not in involved_functions:
+                        involved_functions[caller_function_name] = generate_function_info(item, index)
                         index += 1
-                    if block_item.expr.name not in involved_functions:
-                        add_to_involved_functions(func_def_map[block_item.expr.name.name], involved_functions, index)
+                    if called_function_name not in involved_functions:
+                        involved_functions[called_function_name] = generate_function_info(func_def_map[called_function_name], index)
                         index += 1
                     break
     return involved_functions
@@ -75,7 +77,7 @@ def get_functions_def_map(ast):
     return func_def_map
 
 
-def get_block_call_struct(involved_functions):
+def generate_block_call_struct(involved_functions):
     name = "block_call"
     decls = []
     for function in involved_functions:
@@ -89,7 +91,7 @@ def get_block_call_struct(involved_functions):
     return struct
 
 
-def instantiate_block_call_struct(block_call_struct):
+def generate_block_call_struct_instantiation(block_call_struct):
     name = GlobalParameters.block_call_struct_name
     type = deepcopy(block_call_struct.type)
     type.decls = None
@@ -105,21 +107,21 @@ def generate_2d_struct_ref(inner_struct_name, inner_struct_field, outer_struct_f
     return outer_struct_ref
 
 
-def generate_return_statement(function_name):
+def generate_return_stmt(function_name):
     return_expr = generate_2d_struct_ref(GlobalParameters.block_call_struct_name,
                                          function_name,
                                          GlobalParameters.function_call_struct_return_val_name)
 
-    return_statement = c_ast.Return(return_expr)
-    return return_statement
+    return_stmt = c_ast.Return(return_expr)
+    return return_stmt
 
 
-def generate_block_call_statement(index_label):
+def generate_block_call_stmt(index_label):
     block_call_struct_name = c_ast.ID(GlobalParameters.block_call_struct_name)
     exprs = [c_ast.ID(index_label), c_ast.UnaryOp("&", block_call_struct_name)]
     args = c_ast.ExprList(exprs)
-    block_call_statement = c_ast.FuncCall(c_ast.ID(GlobalParameters.block_name), args)
-    return block_call_statement
+    block_call_stmt = c_ast.FuncCall(c_ast.ID(GlobalParameters.block_name), args)
+    return block_call_stmt
 
 
 def generate_frame_assignments(block_items, function_info):
@@ -138,12 +140,12 @@ def generate_frame_assignments(block_items, function_info):
 
 
 def generate_new_function_definitions(involved_functions, block_call_struct):
-    block_call_struct_instance = instantiate_block_call_struct(block_call_struct)
+    block_call_struct_instance = generate_block_call_struct_instantiation(block_call_struct)
     for function in involved_functions:
         block_items = [block_call_struct_instance]
         generate_frame_assignments(block_items, involved_functions[function])
-        block_items.append(generate_block_call_statement(involved_functions[function].index_label))
-        block_items.append(generate_return_statement(function))
+        block_items.append(generate_block_call_stmt(involved_functions[function].index_label))
+        block_items.append(generate_return_stmt(function))
 
         involved_functions[function].function_definition.body.block_items = block_items
 
@@ -152,9 +154,10 @@ def remove_tail_calls(filename):
     ast = parse_file(filename, use_cpp=False)
     func_def_map = get_functions_def_map(ast)
     involved_functions = identify_involved_functions(ast, func_def_map)
-    block_call_struct = get_block_call_struct(involved_functions)
+    block_call_struct = generate_block_call_struct(involved_functions)
     generate_new_function_definitions(involved_functions, block_call_struct)
-
+    # print_element(ast)
+    pass
 
 if __name__ == "__main__":
     remove_tail_calls(filename="c_files/main.c")
