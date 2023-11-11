@@ -15,17 +15,28 @@ class FunctionSignature:
 
 
 class FunctionInfo:
-    def __init__(self, function_definition, index, call_struct):
+    def __init__(self, function_definition, index, function_call_struct):
         self.function_definition = function_definition
         self.index = index
-        self.call_struct = call_struct
+        self.index_label = f"{function_definition.decl.name}_INDEX"
+        self.call_struct = function_call_struct
 
 
-def get_call_struct(function):
+class GlobalParameters:
+    block_call_struct_name = "frame"
+    function_call_struct_return_val_name = "result"
+    block_name = "block"
+
+
+def print_element(elem):
+    print(c_generator.CGenerator().visit(elem))
+
+
+def get_function_call_struct(function):
     name = f'{function.decl.name}_ios'
     return_type = deepcopy(function.decl.type.type)
-    return_type.declname = "result"
-    return_variable = c_ast.Decl("result", [], [], [], [], return_type, None, None)
+    return_type.declname = GlobalParameters.function_call_struct_return_val_name
+    return_variable = c_ast.Decl(GlobalParameters.function_call_struct_return_val_name, [], [], [], [], return_type, None, None)
     decls = [return_variable]
     if function.decl.type.args is not None:
         decls += function.decl.type.args.params
@@ -35,8 +46,8 @@ def get_call_struct(function):
 
 
 def add_to_involved_functions(function, involved_functions, index):
-    call_struct = get_call_struct(function)
-    involved_functions[function.decl.name] = FunctionInfo(function, index, call_struct)
+    function_call_struct = get_function_call_struct(function)
+    involved_functions[function.decl.name] = FunctionInfo(function, index, function_call_struct)
 
 
 def identify_involved_functions(ast, func_def_map):
@@ -77,13 +88,72 @@ def get_block_call_struct(involved_functions):
     struct = c_ast.Decl(None, [], [], [], [], struct_type, None, None)
     return struct
 
+
+def instantiate_block_call_struct(block_call_struct):
+    name = GlobalParameters.block_call_struct_name
+    type = deepcopy(block_call_struct.type)
+    type.decls = None
+    type_declaration = c_ast.TypeDecl(name, [], None, type)
+    instance = c_ast.Decl(name, [], [], [], [], type_declaration, None, None)
+    return instance
+
+
+def generate_2d_struct_ref(inner_struct_name, inner_struct_field, outer_struct_field):
+    type = "."
+    inner_struct_ref = c_ast.StructRef(c_ast.ID(inner_struct_name), type, c_ast.ID(inner_struct_field))
+    outer_struct_ref = c_ast.StructRef(inner_struct_ref, type, c_ast.ID(outer_struct_field))
+    return outer_struct_ref
+
+
+def generate_return_statement(function_name):
+    return_expr = generate_2d_struct_ref(GlobalParameters.block_call_struct_name,
+                                         function_name,
+                                         GlobalParameters.function_call_struct_return_val_name)
+
+    return_statement = c_ast.Return(return_expr)
+    return return_statement
+
+
+def generate_block_call_statement(index_label):
+    block_call_struct_name = c_ast.ID(GlobalParameters.block_call_struct_name)
+    exprs = [c_ast.ID(index_label), c_ast.UnaryOp("&", block_call_struct_name)]
+    args = c_ast.ExprList(exprs)
+    block_call_statement = c_ast.FuncCall(c_ast.ID(GlobalParameters.block_name), args)
+    return block_call_statement
+
+
+def generate_frame_assignments(block_items, function_info):
+    function_args = function_info.function_definition.decl.type.args
+    if function_args is None:
+        return
+
+    function_name = function_info.function_definition.decl.name
+    for param in function_args.params:
+        param_name = c_ast.ID(param.name)
+        frame_field = generate_2d_struct_ref(GlobalParameters.block_call_struct_name,
+                                             function_name,
+                                             param.name)
+        assignment = c_ast.Assignment('=', frame_field, param_name)
+        block_items.append(assignment)
+
+
+def generate_new_function_definitions(involved_functions, block_call_struct):
+    block_call_struct_instance = instantiate_block_call_struct(block_call_struct)
+    for function in involved_functions:
+        block_items = [block_call_struct_instance]
+        generate_frame_assignments(block_items, involved_functions[function])
+        block_items.append(generate_block_call_statement(involved_functions[function].index_label))
+        block_items.append(generate_return_statement(function))
+
+        involved_functions[function].function_definition.body.block_items = block_items
+
+
 def remove_tail_calls(filename):
     ast = parse_file(filename, use_cpp=False)
     func_def_map = get_functions_def_map(ast)
     involved_functions = identify_involved_functions(ast, func_def_map)
     block_call_struct = get_block_call_struct(involved_functions)
-    # print(c_generator.CGenerator().visit(block_call_struct))
-    pass
+    generate_new_function_definitions(involved_functions, block_call_struct)
 
 
 if __name__ == "__main__":
