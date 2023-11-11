@@ -150,13 +150,30 @@ def generate_new_function_definitions(involved_functions, block_call_struct):
         involved_functions[function].function_definition.body.block_items = block_items
 
 
+def remove_and_save_directives(filename):
+    directives, new_file = [], []
+    with open(filename) as file:
+        for line in file:
+            if line.strip():
+                if line.strip()[0] == '#':
+                    directives.append(line)
+                else:
+                    new_file.append(line)
+
+    with open(filename, "w") as file:
+        file.writelines(new_file)
+
+    return directives
+
+
 def remove_tail_calls(filename):
+    directives = remove_and_save_directives(filename)
     ast = parse_file(filename, use_cpp=False)
     func_def_map = get_functions_def_map(ast)
     involved_functions = identify_involved_functions(ast, func_def_map)
     block_call_struct = generate_block_call_struct(involved_functions)
     generate_new_function_definitions(involved_functions, block_call_struct)
-    # print_element(ast)
+    print_element(ast)
     pass
 
 if __name__ == "__main__":
