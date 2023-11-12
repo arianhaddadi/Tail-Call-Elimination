@@ -1,15 +1,32 @@
 int foo(int x, int y) {
-    return 2;
+    return bar(x);
 }
-struct sqq {
-    int y;
-};
-struct ss {
-    struct sqq sqaz;
-};
+
+int bar(int x) {
+    return 5;
+}
+
+
+void block(int index, union block_call *frame) {
+    switch (index) {
+        foo_LABEL:
+        case (foo_INDEX): {
+            int x = frame->foo.x;
+            int y = frame->foo.y;
+            frame->bar.x = x;
+            goto bar_LABEL;
+        }
+
+        bar_LABEL:
+        case (bar_INDEX): {
+            int x = frame->bar.x;
+            frame->bar.result = 5;
+            return;
+        }
+    }
+}
+
 int main() {
-    goto label1;
-    label1:
-    printf("here");
-    return foo();
+    foo(2, 3);
+    return 0;
 }
