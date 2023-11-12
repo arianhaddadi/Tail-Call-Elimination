@@ -15,13 +15,12 @@ class FunctionSignature:
 
 
 class FunctionInfo:
-    def __init__(self, function_definition, index, function_call_struct, called_function_name):
+    def __init__(self, function_definition, index, function_call_struct):
         self.function_definition = function_definition
         self.index = index
         self.index_label = f"{function_definition.decl.name}_INDEX"
         self.block_label = f"{function_definition.decl.name}_LABEL"
         self.call_struct = function_call_struct
-        self.called_function_name = called_function_name  # TODO: Remove this if unnecessary
 
 
 class GlobalParameters:
@@ -48,9 +47,9 @@ def get_function_call_struct(function):
     return struct
 
 
-def generate_function_info(function, index, called_function_name=None):
+def generate_function_info(function, index):
     function_call_struct = get_function_call_struct(function)
-    return FunctionInfo(function, index, function_call_struct, called_function_name)
+    return FunctionInfo(function, index, function_call_struct)
 
 
 def identify_involved_functions(ast, func_def_map):
@@ -63,10 +62,8 @@ def identify_involved_functions(ast, func_def_map):
                     caller_function_name = item.decl.name
                     called_function_name = block_item.expr.name.name
                     if caller_function_name not in involved_functions:
-                        involved_functions[caller_function_name] = generate_function_info(item, index, called_function_name)
+                        involved_functions[caller_function_name] = generate_function_info(item, index)
                         index += 1
-                    else:
-                        involved_functions[caller_function_name].called_function_name = called_function_name
                     if called_function_name not in involved_functions:
                         involved_functions[called_function_name] = generate_function_info(func_def_map[called_function_name], index)
                         index += 1
@@ -218,7 +215,7 @@ def generate_block_function(involved_functions, block_call_union, func_def_map):
 
 def remove_tail_calls(filename):
     # directives = remove_and_save_directives(filename)
-    ast = parse_file(filename, use_cpp=False)
+    ast = parse_file(filename)
     func_def_map = get_functions_def_map(ast)
     involved_functions = identify_involved_functions(ast, func_def_map)
     block_call_union = generate_block_call_union(involved_functions)
