@@ -20,13 +20,13 @@ class Block:
         return union
 
     @staticmethod
-    def generate_block_function_index_arg_declaration():
+    def generate_block_function_index_arg():
         declaration_type = c_ast.TypeDecl("index", [], [], c_ast.IdentifierType(['int']))
         declaration = c_ast.Decl('index', [], [], [], [], declaration_type, None, None)
         return declaration
 
     @staticmethod
-    def generate_block_function_block_call_arg_declaration():
+    def generate_block_function_union_arg():
         pointer_union_type = c_ast.Union(GlobalParameters.block_call_union_name, None)
         pointer_type = c_ast.TypeDecl(GlobalParameters.block_call_union_instance_name, [], None, pointer_union_type)
         declaration_type = c_ast.PtrDecl([], pointer_type)
@@ -37,8 +37,7 @@ class Block:
     @staticmethod
     def generate_block_function_declaration():
         return_type = c_ast.TypeDecl(GlobalParameters.block_name, [], None, c_ast.IdentifierType(["void"]))
-        args = c_ast.ParamList(
-            [Block.generate_block_function_index_arg_declaration(), Block.generate_block_function_block_call_arg_declaration()])
+        args = c_ast.ParamList([Block.generate_block_function_index_arg(), Block.generate_block_function_union_arg()])
         declaration_type = c_ast.FuncDecl(args, return_type)
         function_declaration = c_ast.Decl(GlobalParameters.block_name, [], [], [], [], declaration_type, None, None)
         return function_declaration
@@ -63,9 +62,10 @@ class Block:
         if isinstance(return_expr.expr, c_ast.FuncCall):
             called_function_name = return_expr.expr.name.name
             function_params = func_def_map[called_function_name].decl.type.args.params
-            for param in function_params:
+            args = return_expr.expr.args.exprs
+            for i, param in enumerate(function_params):
                 param_assignment = c_ast.Assignment(op='=',
-                                                    rvalue=c_ast.ID(param.name),
+                                                    rvalue=args[i],
                                                     lvalue=utils.generate_2d_struct_ref(GlobalParameters.block_call_union_instance_name,
                                                                                         called_function_name,
                                                                                         param.name,
@@ -92,19 +92,19 @@ class Block:
             elif isinstance(item, c_ast.If):
                 item_clone = deepcopy(item)
                 if item.iftrue is not None:
-                    item_clone.iftrue.block_items = Block.traverse(item_clone.iftrue.block_items, function_name, func_def_map)
+                    item_clone.iftrue.block_items = Block.traverse(item.iftrue.block_items, function_name, func_def_map)
                 if item.iffalse is not None:
-                    item_clone.iffalse.block_items = Block.traverse(item_clone.iffalse.block_items, function_name, func_def_map)
+                    item_clone.iffalse.block_items = Block.traverse(item.iffalse.block_items, function_name, func_def_map)
                 new_items.append(item_clone)
             elif isinstance(item, c_ast.While) or isinstance(item, c_ast.For) or isinstance(item, c_ast.Switch):
                 item_clone = deepcopy(item)
                 if item.stmt is not None:
-                    item.stmt.block_items = Block.traverse(item.stmt.block_items, function_name, func_def_map)
+                    item_clone.stmt.block_items = Block.traverse(item.stmt.block_items, function_name, func_def_map)
                 new_items.append(item_clone)
             elif isinstance(item, c_ast.Case):
                 item_clone = deepcopy(item)
                 if item.stmts is not None:
-                    item.stmts.block_items = Block.traverse(item.stmts.block_items, function_name, func_def_map)
+                    item_clone.stmts.block_items = Block.traverse(item.stmts.block_items, function_name, func_def_map)
                 new_items.append(item_clone)
             else:
                 new_items.append(item)
