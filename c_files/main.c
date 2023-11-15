@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <math.h>
 
+int bar(int x);
+
 int bar(int x) {
     printf("x:%d\n", x);
     return 5 + 2;

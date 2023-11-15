@@ -59,6 +59,7 @@ void block(int index, union block_call *frame)
 
 
 
+int bar(int x);
 int bar(int x)
 {
   union block_call frame;
@@ -66,8 +67,6 @@ int bar(int x)
   block(bar_INDEX, &frame);
   return frame.bar.result;
 }
-
-
 
 int foo(int x, int y)
 {
@@ -77,8 +76,6 @@ int foo(int x, int y)
   block(foo_INDEX, &frame);
   return frame.foo.result;
 }
-
-
 
 int main()
 {

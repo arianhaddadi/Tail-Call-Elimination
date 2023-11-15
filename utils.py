@@ -96,9 +96,7 @@ def write_result_to_disk(directives, involved_functions, block_call_union, block
 
     file_content += "\n" + visitor.visit(block_call_union) + ";\n"
     file_content += "\n" + visitor.visit(block_function) + "\n"
-
-    for item in ast.ext:
-        file_content += "\n" + visitor.visit(item) + "\n"
+    file_content += "\n" + visitor.visit(ast) + "\n"
 
     with open(f'{filename[:-2]}_removed.c', 'w') as file:
         file.write(file_content)
