@@ -1,8 +1,21 @@
 #include <stdio.h>
 #include <math.h>
 
-#define foo_INDEX 0
-#define bar_INDEX 1
+#define bar_INDEX 0
+#define gar_INDEX 1
+#define foo_INDEX 2
+
+struct bar_ios
+{
+  int result;
+  int x;
+};
+
+struct gar_ios
+{
+  int result;
+  int y;
+};
 
 struct foo_ios
 {
@@ -11,22 +24,37 @@ struct foo_ios
   int y;
 };
 
-struct bar_ios
-{
-  int result;
-  int x;
-};
-
 union block_call
 {
-  struct foo_ios foo;
   struct bar_ios bar;
+  struct gar_ios gar;
+  struct foo_ios foo;
 };
 
 void block(int index, union block_call *frame)
 {
   switch (index)
   {
+    bar_LABEL:
+    case bar_INDEX:
+    {
+      int x = frame->bar.x;
+      printf("x:%d\n", x);
+      frame->gar.y = 7 + 10;
+      goto gar_LABEL;
+    }
+
+
+    gar_LABEL:
+    case gar_INDEX:
+    {
+      int y = frame->gar.y;
+      printf("y:%d\n", y + 2);
+      frame->gar.result = y + 2;
+      return;
+    }
+
+
     foo_LABEL:
     case foo_INDEX:
     {
@@ -43,16 +71,6 @@ void block(int index, union block_call *frame)
     }
 
 
-    bar_LABEL:
-    case bar_INDEX:
-    {
-      int x = frame->bar.x;
-      printf("x:%d\n", x);
-      frame->bar.result = 5 + 2;
-      return;
-    }
-
-
   }
 
 }
@@ -60,6 +78,14 @@ void block(int index, union block_call *frame)
 
 
 int bar(int x);
+int gar(int y)
+{
+  union block_call frame;
+  frame.gar.y = y;
+  block(gar_INDEX, &frame);
+  return frame.gar.result;
+}
+
 int bar(int x)
 {
   union block_call frame;

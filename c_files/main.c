@@ -3,9 +3,14 @@
 
 int bar(int x);
 
+int gar(int y) {
+    printf("y:%d\n", y+2);
+    return y + 2;
+}
+
 int bar(int x) {
     printf("x:%d\n", x);
-    return 5 + 2;
+    return gar(7+10);
 }
 
 int foo(int x, int y) {
