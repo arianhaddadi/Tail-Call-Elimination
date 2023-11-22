@@ -18,7 +18,7 @@ class GlobalParameters:
     block_name = "block"
 
 
-def get_function_call_struct(function):
+def generate_function_call_struct(function):
     name = f'{function.decl.name}_ios'
     return_type = deepcopy(function.decl.type.type)
     return_type.declname = GlobalParameters.function_return_val_name
@@ -32,7 +32,7 @@ def get_function_call_struct(function):
 
 
 def generate_function_info(function, index):
-    function_call_struct = get_function_call_struct(function)
+    function_call_struct = generate_function_call_struct(function)
     return FunctionInfo(function, index, function_call_struct)
 
 
@@ -119,7 +119,7 @@ def generate_block_call_struct_instantiation(block_call_union):
     return instance
 
 
-def generate_return_stmt(function_name):
+def generate_return_stmt_in_new_functions(function_name):
     return_expr = generate_2d_struct_ref(GlobalParameters.block_call_union_instance_name,
                                          function_name,
                                          GlobalParameters.function_return_val_name)
@@ -136,7 +136,7 @@ def generate_block_call_stmt(index_label):
     return block_call_stmt
 
 
-def generate_frame_assignments(block_items, function_info):
+def generate_params_assignments_in_frame(block_items, function_info):
     function_args = function_info.function_definition.decl.type.args
     if function_args is None:
         return
@@ -155,8 +155,8 @@ def change_function_definitions(involved_functions, block_call_union):
     block_call_struct_instance = generate_block_call_struct_instantiation(block_call_union)
     for function in involved_functions:
         block_items = [block_call_struct_instance]
-        generate_frame_assignments(block_items, involved_functions[function])
+        generate_params_assignments_in_frame(block_items, involved_functions[function])
         block_items.append(generate_block_call_stmt(involved_functions[function].index_label))
-        block_items.append(generate_return_stmt(function))
+        block_items.append(generate_return_stmt_in_new_functions(function))
 
         involved_functions[function].function_definition.body.block_items = block_items

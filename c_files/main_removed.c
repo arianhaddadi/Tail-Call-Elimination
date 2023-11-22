@@ -40,7 +40,7 @@ void block(int index, union block_call *frame)
     {
       int x = frame->bar.x;
       printf("x:%d\n", x);
-      frame->gar.y = 7 + 10;
+      frame->gar.y = 7 + x;
       goto gar_LABEL;
     }
 
@@ -106,6 +106,7 @@ int foo(int x, int y)
 int main()
 {
   foo(2, 3);
+  foo(3, 3);
   return 0;
 }
 

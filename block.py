@@ -57,7 +57,7 @@ class Block:
         return assignments
 
     @staticmethod
-    def convert_return_inside_block(function_name, return_expr, func_def_map):
+    def convert_return_in_block(function_name, return_expr, func_def_map):
         items = []
         if isinstance(return_expr.expr, c_ast.FuncCall):
             called_function_name = return_expr.expr.name.name
@@ -88,7 +88,7 @@ class Block:
         new_items = []
         for item in items:
             if isinstance(item, c_ast.Return):
-                new_items.extend(Block.convert_return_inside_block(function_name, item, func_def_map))
+                new_items.extend(Block.convert_return_in_block(function_name, item, func_def_map))
             elif isinstance(item, c_ast.If):
                 item_clone = deepcopy(item)
                 if item.iftrue is not None:
@@ -111,22 +111,22 @@ class Block:
         return new_items
 
     @staticmethod
-    def generate_case_body_inside_block(function_info, func_def_map):
+    def generate_function_case_body_in_block(function_info, func_def_map):
         argument_assignments = Block.generate_arguments_assignments(function_info)
         function_name = function_info.function_definition.decl.name
         body_items = Block.traverse(function_info.function_definition.body.block_items, function_name, func_def_map)
         return argument_assignments + body_items
 
     @staticmethod
-    def generate_function_body_in_block(function_info, func_def_map):
-        case_body = Block.generate_case_body_inside_block(function_info, func_def_map)
+    def generate_function_case_in_block(function_info, func_def_map):
+        case_body = Block.generate_function_case_body_in_block(function_info, func_def_map)
         case_stmt = c_ast.Case(c_ast.ID(function_info.index_label), [c_ast.Compound(case_body)])
         label = c_ast.Label(function_info.block_label, case_stmt)
         return label
 
     @staticmethod
-    def generate_block_function_body(involved_functions, func_def_map):
-        functions_bodies = [Block.generate_function_body_in_block(involved_functions[function], func_def_map)
+    def generate_block_function_definition(involved_functions, func_def_map):
+        functions_bodies = [Block.generate_function_case_in_block(involved_functions[function], func_def_map)
                             for function in involved_functions]
         switch_body = c_ast.Compound(functions_bodies)
         switch_stmt = c_ast.Switch(c_ast.ID('index'), switch_body)
@@ -137,6 +137,6 @@ class Block:
     @staticmethod
     def generate_block_function(involved_functions, func_def_map):
         function_declaration = Block.generate_block_function_declaration()
-        function_body = Block.generate_block_function_body(involved_functions, func_def_map)
+        function_body = Block.generate_block_function_definition(involved_functions, func_def_map)
         block_function = c_ast.FuncDef(function_declaration, None, function_body)
         return block_function

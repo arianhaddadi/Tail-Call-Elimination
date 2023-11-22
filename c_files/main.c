@@ -10,7 +10,7 @@ int gar(int y) {
 
 int bar(int x) {
     printf("x:%d\n", x);
-    return gar(7+10);
+    return gar(7+x);
 }
 
 int foo(int x, int y) {
@@ -24,5 +24,6 @@ int foo(int x, int y) {
 
 int main() {
     foo(2, 3);
+    foo(3, 3);
     return 0;
 }
