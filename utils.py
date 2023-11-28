@@ -110,7 +110,7 @@ def generate_2d_struct_ref(inner_struct_name, inner_struct_field, outer_struct_f
     return outer_struct_ref
 
 
-def generate_block_call_struct_instantiation(block_call_union):
+def generate_block_call_union_instance(block_call_union):
     name = GlobalParameters.block_call_union_instance_name
     type = deepcopy(block_call_union.type)
     type.decls = None
@@ -152,9 +152,9 @@ def generate_params_assignments_in_frame(block_items, function_info):
 
 
 def change_function_definitions(involved_functions, block_call_union):
-    block_call_struct_instance = generate_block_call_struct_instantiation(block_call_union)
+    block_call_union_instance = generate_block_call_union_instance(block_call_union)
     for function in involved_functions:
-        block_items = [block_call_struct_instance]
+        block_items = [block_call_union_instance]
         generate_params_assignments_in_frame(block_items, involved_functions[function])
         block_items.append(generate_block_call_stmt(involved_functions[function].index_label))
         block_items.append(generate_return_stmt_in_new_functions(function))
