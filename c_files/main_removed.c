@@ -66,6 +66,15 @@ void block(int index, union block_call *frame)
         frame->bar.x = x + y;
         goto bar_LABEL;
       }
+      for (int i = 0; i < 10; i++)
+      {
+        if (i == 5)
+        {
+          frame->bar.x = 10 + (47 * 31);
+          goto bar_LABEL;
+        }
+      }
+
       frame->bar.x = x * y;
       goto bar_LABEL;
     }
@@ -77,7 +86,6 @@ void block(int index, union block_call *frame)
 
 
 
-int bar(int x);
 int gar(int y)
 {
   union block_call frame;

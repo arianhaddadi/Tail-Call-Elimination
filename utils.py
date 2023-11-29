@@ -1,7 +1,9 @@
 from pycparser import c_ast, c_generator
 from copy import deepcopy
 
-
+"""
+Class used to store information about the function involved in the tail call process
+"""
 class FunctionInfo:
     def __init__(self, function_definition, index, function_call_struct):
         self.function_definition = function_definition
@@ -11,6 +13,9 @@ class FunctionInfo:
         self.call_struct = function_call_struct
 
 
+"""
+Class for parametrizing constant names to facilitate their changing
+"""
 class GlobalParameters:
     block_call_union_instance_name = "frame"
     block_call_union_name = "block_call"
@@ -18,6 +23,18 @@ class GlobalParameters:
     block_name = "block"
 
 
+"""
+Generate the struct that stores the parameters and return value of the function.
+For example, if the function's declaration is
+float foo(int x, int y)
+
+the call struct for this function will be
+struct foo_ios {
+    float result;
+    int x;
+    int y;
+}
+"""
 def generate_function_call_struct(function):
     name = f'{function.decl.name}_ios'
     return_type = deepcopy(function.decl.type.type)
@@ -31,11 +48,18 @@ def generate_function_call_struct(function):
     return struct
 
 
+"""
+Generate the instance of FunctionInfo class for the given function
+"""
 def generate_function_info(function, index):
     function_call_struct = generate_function_call_struct(function)
     return FunctionInfo(function, index, function_call_struct)
 
 
+"""
+Removes the directives from the given file as Pycparser does not support directives and saves them in a list
+in order to add them to the final result
+"""
 def remove_and_save_directives(filename, temp_filename):
     directives, new_file = [], []
     with open(filename) as file:
@@ -52,6 +76,10 @@ def remove_and_save_directives(filename, temp_filename):
     return directives
 
 
+"""
+Generate a mapping from the name of the function to its FuncDef
+FuncDef instance is created by Pycparser when the source code is parsed into AST
+"""
 def get_functions_def_map(ast):
     func_def_map = dict()
     for item in ast.ext:
@@ -60,6 +88,10 @@ def get_functions_def_map(ast):
     return func_def_map
 
 
+"""
+Identify the functions that either tail call another function or are tail called by another function
+in order to add them to the block function
+"""
 def identify_involved_functions(ast, func_def_map):
     involved_functions = dict()
     index = 0
@@ -79,6 +111,9 @@ def identify_involved_functions(ast, func_def_map):
     return involved_functions
 
 
+"""
+Write the final result of the tail call elimination process to disk
+"""
 def write_result_to_disk(directives, involved_functions, block_call_union, block_function, ast, filename):
     file_content = ""
     visitor = c_generator.CGenerator()
@@ -102,6 +137,12 @@ def write_result_to_disk(directives, involved_functions, block_call_union, block
         file.write(file_content)
 
 
+"""
+Generates a 2d struct ref.
+2d struct ref is like foo.bar.gar
+inner_ptr and outer_ptr mean that instead of ., it must be ->
+like foo.bar->gar or foo->bar.get depending on whether it's inner or outer ptr
+"""
 def generate_2d_struct_ref(inner_struct_name, inner_struct_field, outer_struct_field, inner_ptr = False, outer_ptr = False):
     inner_ref_operator = "." if inner_ptr is False else '->'
     outer_ref_operator = "." if outer_ptr is False else '->'
@@ -110,53 +151,4 @@ def generate_2d_struct_ref(inner_struct_name, inner_struct_field, outer_struct_f
     return outer_struct_ref
 
 
-def generate_block_call_union_instance(block_call_union):
-    name = GlobalParameters.block_call_union_instance_name
-    type = deepcopy(block_call_union.type)
-    type.decls = None
-    type_declaration = c_ast.TypeDecl(name, [], None, type)
-    instance = c_ast.Decl(name, [], [], [], [], type_declaration, None, None)
-    return instance
 
-
-def generate_return_stmt_in_new_functions(function_name):
-    return_expr = generate_2d_struct_ref(GlobalParameters.block_call_union_instance_name,
-                                         function_name,
-                                         GlobalParameters.function_return_val_name)
-
-    return_stmt = c_ast.Return(return_expr)
-    return return_stmt
-
-
-def generate_block_call_stmt(index_label):
-    block_call_struct_name = c_ast.ID(GlobalParameters.block_call_union_instance_name)
-    exprs = [c_ast.ID(index_label), c_ast.UnaryOp("&", block_call_struct_name)]
-    args = c_ast.ExprList(exprs)
-    block_call_stmt = c_ast.FuncCall(c_ast.ID(GlobalParameters.block_name), args)
-    return block_call_stmt
-
-
-def generate_params_assignments_in_frame(block_items, function_info):
-    function_args = function_info.function_definition.decl.type.args
-    if function_args is None:
-        return
-
-    function_name = function_info.function_definition.decl.name
-    for param in function_args.params:
-        param_name = c_ast.ID(param.name)
-        frame_field = generate_2d_struct_ref(GlobalParameters.block_call_union_instance_name,
-                                             function_name,
-                                             param.name)
-        assignment = c_ast.Assignment('=', frame_field, param_name)
-        block_items.append(assignment)
-
-
-def change_function_definitions(involved_functions, block_call_union):
-    block_call_union_instance = generate_block_call_union_instance(block_call_union)
-    for function in involved_functions:
-        block_items = [block_call_union_instance]
-        generate_params_assignments_in_frame(block_items, involved_functions[function])
-        block_items.append(generate_block_call_stmt(involved_functions[function].index_label))
-        block_items.append(generate_return_stmt_in_new_functions(function))
-
-        involved_functions[function].function_definition.body.block_items = block_items

@@ -2,6 +2,7 @@ import utils
 import os
 from pycparser import parse_file
 from block import Block
+from new_functions import NewFunctions
 
 
 def remove_tail_calls(filename):
@@ -12,7 +13,7 @@ def remove_tail_calls(filename):
     involved_functions = utils.identify_involved_functions(ast, func_def_map)
     block_call_union = Block.generate_block_call_union(involved_functions)
     block_function = Block.generate_block_function(involved_functions, func_def_map)
-    utils.change_function_definitions(involved_functions, block_call_union)
+    NewFunctions.change_function_definitions(involved_functions, block_call_union)
 
     utils.write_result_to_disk(directives, involved_functions, block_call_union, block_function, ast, filename)
     os.remove(temp_filename)
