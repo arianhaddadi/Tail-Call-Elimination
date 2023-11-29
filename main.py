@@ -8,6 +8,7 @@ from new_functions import NewFunctions
 def remove_tail_calls(filename):
     temp_filename = f"{filename[:-2]}_temp.c"
     directives = utils.remove_and_save_directives(filename, temp_filename)
+
     ast = parse_file(temp_filename)
     func_def_map = utils.get_functions_def_map(ast)
     involved_functions = utils.identify_involved_functions(ast, func_def_map)

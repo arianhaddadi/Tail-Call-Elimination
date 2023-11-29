@@ -143,7 +143,7 @@ Generates a 2d struct ref.
 inner_ptr and outer_ptr mean that instead of ., it must be ->
 like foo.bar->gar or foo->bar.get depending on whether it's inner or outer ptr
 """
-def generate_2d_struct_ref(inner_struct_name, inner_struct_field, outer_struct_field, inner_ptr = False, outer_ptr = False):
+def generate_2d_struct_ref(inner_struct_name, inner_struct_field, outer_struct_field, inner_ptr=False, outer_ptr=False):
     inner_ref_operator = "." if inner_ptr is False else '->'
     outer_ref_operator = "." if outer_ptr is False else '->'
     inner_struct_ref = c_ast.StructRef(c_ast.ID(inner_struct_name), inner_ref_operator, c_ast.ID(inner_struct_field))
