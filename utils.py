@@ -58,13 +58,22 @@ def generate_function_info(function, index):
 
 """
 Removes the directives from the given file as Pycparser does not support directives and saves them in a list
-in order to add them to the final result
+in order to add them to the final result. It also discard commented code.
 """
 def remove_and_save_directives(filename, temp_filename):
     directives, new_file = [], []
+    is_comment = False
     with open(filename) as file:
         for line in file:
             if line.strip():
+                if is_comment:
+                    if line.strip()[0:2] == '*/':
+                        is_comment = False
+                    continue
+                if line.strip()[0] == '/':
+                    if line.strip()[1] == '*':
+                        is_comment = True if line.strip()[-2:] != "*/" else False
+                    continue
                 if line.strip()[0] == '#':
                     directives.append(line)
                 else:

@@ -5,7 +5,9 @@ from block import Block
 from new_functions import NewFunctions
 import sys
 
-
+"""
+Main Function of the project, responsible to call the required functions to do the elimination process
+"""
 def remove_tail_calls(filename):
     temp_filename = f"{filename[:-2]}_temp.c"
     directives = utils.remove_and_save_directives(filename, temp_filename)

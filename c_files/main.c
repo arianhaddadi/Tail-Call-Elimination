@@ -14,6 +14,9 @@ int bar(int x) {
 
 int foo(int x, int y) {
     printf("foo\n");
+    if (x == 6) {
+        return bar(x+y) + 7;
+    }
     if (x == 2) {
       return bar(x+y);
     }
@@ -27,7 +30,6 @@ int foo(int x, int y) {
 
 
 int main() {
-    foo(2, 3);
-    foo(3, 3);
+    printf("%d \n", foo(6, 7));
     return 0;
 }

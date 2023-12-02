@@ -61,6 +61,11 @@ void block(int index, union block_call *frame)
       int x = frame->foo.x;
       int y = frame->foo.y;
       printf("foo\n");
+      if (x == 6)
+      {
+        frame->foo.result = bar(x + y) + 7;
+        return;
+      }
       if (x == 2)
       {
         frame->bar.x = x + y;
@@ -113,8 +118,7 @@ int foo(int x, int y)
 
 int main()
 {
-  foo(2, 3);
-  foo(3, 3);
+  printf("%d \n", foo(6, 7));
   return 0;
 }
 
