@@ -5,6 +5,10 @@
 #define gar_INDEX 1
 #define foo_INDEX 2
 
+extern int bar(int x);
+extern int gar(int y);
+extern int foo(int x, int y);
+
 struct bar_ios
 {
   int result;
@@ -39,7 +43,14 @@ void block(int index, union block_call *frame)
     case bar_INDEX:
     {
       int x = frame->bar.x;
+      printf("bar\n");
       printf("x:%d\n", x);
+      while (1)
+      {
+        gar(12);
+        break;
+      }
+
       frame->gar.y = 7 + x;
       goto gar_LABEL;
     }
@@ -49,7 +60,8 @@ void block(int index, union block_call *frame)
     case gar_INDEX:
     {
       int y = frame->gar.y;
-      printf("y:%d\n", y + 2);
+      printf("gar\n");
+      printf("y+2:%d\n", y + 2);
       frame->gar.result = y + 2;
       return;
     }
@@ -61,15 +73,20 @@ void block(int index, union block_call *frame)
       int x = frame->foo.x;
       int y = frame->foo.y;
       printf("foo\n");
-      if (x == 6)
+      if (x == 2)
       {
         frame->foo.result = bar(x + y) + 7;
         return;
       }
-      if (x == 2)
+      else
+        if (x == 6)
       {
         frame->bar.x = x + y;
         goto bar_LABEL;
+      }
+      else
+      {
+        bar(x + y);
       }
       for (int i = 0; i < 10; i++)
       {
@@ -118,6 +135,8 @@ int foo(int x, int y)
 
 int main()
 {
+  printf("%d \n", foo(6, 7));
+  printf("%d \n", foo(2, 7));
   printf("%d \n", foo(6, 7));
   return 0;
 }

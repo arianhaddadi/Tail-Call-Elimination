@@ -135,6 +135,10 @@ def write_result_to_disk(directives, involved_functions, block_call_union, block
         function_info = involved_functions[function]
         file_content += f"#define {function_info.index_label} {function_info.index}\n"
 
+    file_content += "\n"
+    for function in involved_functions:
+        file_content += "extern " + visitor.visit(involved_functions[function].function_definition.decl) + ";\n"
+
     for function in involved_functions:
         file_content += "\n" + visitor.visit(involved_functions[function].call_struct) + ";\n"
 

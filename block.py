@@ -164,7 +164,10 @@ class Block:
                 if item.iftrue is not None:
                     item_clone.iftrue.block_items = Block.traverse(item.iftrue.block_items, function_name, func_def_map)
                 if item.iffalse is not None:
-                    item_clone.iffalse.block_items = Block.traverse(item.iffalse.block_items, function_name, func_def_map)
+                    if isinstance(item.iffalse, c_ast.If):
+                        item_clone.iffalse = Block.traverse([item.iffalse], function_name, func_def_map)[0]
+                    else:
+                        item_clone.iffalse.block_items = Block.traverse(item.iffalse.block_items, function_name, func_def_map)
                 new_items.append(item_clone)
             elif isinstance(item, c_ast.While) or isinstance(item, c_ast.For) or isinstance(item, c_ast.Switch):
                 item_clone = deepcopy(item)
