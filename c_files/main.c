@@ -12,7 +12,7 @@ int bar(int x) {
     printf("bar\n");
     printf("x:%d\n", x);
     while (1) {
-        gar(12);
+        return gar(12);
         break;
     }
     return gar(7+x);
@@ -21,13 +21,13 @@ int bar(int x) {
 int foo(int x, int y) {
     printf("foo\n");
     if (x == 2) {
-        return bar(x+y) + 7;
+        return 10;
     }
     else if (x == 6) {
       return bar(x+y);
     }
     else {
-        bar(x+y);
+        return bar(x / x);
     }
     for (int i = 0; i < 10; i++) {
         if (i == 5) {
@@ -41,7 +41,7 @@ int foo(int x, int y) {
 int main() {
     printf("%d \n", foo(6, 7));
     printf("%d \n", foo(2, 7));
-    printf("%d \n", foo(6, 7));
+    printf("%d \n", foo(8, 7));
 
     return 0;
 }
