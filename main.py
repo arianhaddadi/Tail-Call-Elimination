@@ -3,6 +3,7 @@ import os
 from pycparser import parse_file
 from block import Block
 from new_functions import NewFunctions
+import sys
 
 
 def remove_tail_calls(filename):
@@ -21,4 +22,7 @@ def remove_tail_calls(filename):
 
 
 if __name__ == "__main__":
-    remove_tail_calls(filename="c_files/main.c")
+    filename = "c_files/main.c"
+    if len(sys.argv) > 1 and sys.argv[1]:
+        filename = sys.argv[1]
+    remove_tail_calls(filename=filename)
