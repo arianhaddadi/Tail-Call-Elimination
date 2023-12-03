@@ -1,5 +1,4 @@
 .idea
 __pycache__
-c_files/*_removed.c
-submission
 .DS_Store
+build.sh
