@@ -1,14 +1,13 @@
-import utils
+from src import utils
 import os
 from pycparser import parse_file
-from block import Block
-from new_functions import NewFunctions
+from src.block import Block
+from src.new_functions import NewFunctions
 import sys
 
-"""
-Main Function of the project, responsible to call the required functions to do the elimination process
-"""
+
 def remove_tail_calls(filename):
+    """Calls all the functions for the steps of the tail call elimination process."""
     temp_filename = f"{filename[:-2]}_temp.c"
     directives = utils.remove_and_save_directives(filename, temp_filename)
 
@@ -24,7 +23,7 @@ def remove_tail_calls(filename):
 
 
 if __name__ == "__main__":
-    filename = "c_files/main.c"
+    filename = "../c_files/main.c"
     if len(sys.argv) > 1 and sys.argv[1]:
         filename = sys.argv[1]
     remove_tail_calls(filename=filename)
