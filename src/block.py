@@ -7,7 +7,12 @@ import utils
 class Block:
     """
     Used to handle operations related to the block function and its inputs and
-    its calling inside the new definitions of the involved functions
+    its calling inside the new definitions of the involved functions.
+
+    Block function is the function that includes the logic of all functions
+    that originally had tail calls with their tail calls having been removed.
+    This is essentially the main function that this program generates
+    to remove tail calls from the source code.
     """
     @staticmethod
     def generate_block_call_union(involved_functions):
@@ -15,7 +20,6 @@ class Block:
         This function generates the union that contains all the involved function's call structs.
         For example if the involved functions are foo and bar, and their call structs are named foo_ios and bar_ios
         respectively, this union would be
-
             union block_call {
               struct bar_ios bar;
               struct foo_ios foo;
@@ -44,7 +48,8 @@ class Block:
         This function generates the first parameter which is 'int index'
         """
         declaration_type = c_ast.TypeDecl("index", [], [], c_ast.IdentifierType(['int']))
-        declaration = c_ast.Decl('index', [], [], [], [], declaration_type, None, None)
+        declaration = c_ast.Decl('index', [], [], [], [],
+                                 declaration_type, None, None)
         return declaration
 
     @staticmethod
@@ -60,8 +65,8 @@ class Block:
         pointer_union_type = c_ast.Union(GlobalParameters.block_call_union_name, None)
         pointer_type = c_ast.TypeDecl(GlobalParameters.block_call_union_instance_name, [], None, pointer_union_type)
         declaration_type = c_ast.PtrDecl([], pointer_type)
-        declaration = c_ast.Decl(GlobalParameters.block_call_union_instance_name, [], [], [], [], declaration_type,
-                                 None, None)
+        declaration = c_ast.Decl(GlobalParameters.block_call_union_instance_name,
+                                 [], [], [], [], declaration_type,None, None)
         return declaration
 
     @staticmethod
@@ -73,7 +78,8 @@ class Block:
         return_type = c_ast.TypeDecl(GlobalParameters.block_name, [], None, c_ast.IdentifierType(["void"]))
         args = c_ast.ParamList([Block.generate_block_function_index_arg(), Block.generate_block_function_union_arg()])
         declaration_type = c_ast.FuncDecl(args, return_type)
-        function_declaration = c_ast.Decl(GlobalParameters.block_name, [], [], [], [], declaration_type, None, None)
+        function_declaration = c_ast.Decl(GlobalParameters.block_name, [],
+                                          [], [], [], declaration_type, None, None)
         return function_declaration
 
     @staticmethod
@@ -230,7 +236,7 @@ class Block:
             block(foo_INDEX, &frame);
         """
         block_call_struct_name = c_ast.ID(GlobalParameters.block_call_union_instance_name)
-        exprs = [c_ast.ID(index_label), c_ast.UnaryOp("&", block_call_struct_name)]
-        args = c_ast.ExprList(exprs)
+        expressions = [c_ast.ID(index_label), c_ast.UnaryOp("&", block_call_struct_name)]
+        args = c_ast.ExprList(expressions)
         block_call_stmt = c_ast.FuncCall(c_ast.ID(GlobalParameters.block_name), args)
         return block_call_stmt

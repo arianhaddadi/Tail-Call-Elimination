@@ -36,7 +36,8 @@ def generate_function_call_struct(function):
     name = f'{function.decl.name}_ios'
     return_type = deepcopy(function.decl.type.type)
     return_type.declname = GlobalParameters.function_return_val_name
-    return_variable = c_ast.Decl(GlobalParameters.function_return_val_name, [], [], [], [], return_type, None, None)
+    return_variable = c_ast.Decl(GlobalParameters.function_return_val_name, [], [], [], [],
+                                 return_type, None, None)
     decls = [return_variable]
     if function.decl.type.args is not None:
         decls += function.decl.type.args.params
