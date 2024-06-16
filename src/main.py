@@ -1,8 +1,8 @@
-from src import utils
+import utils
 import os
 from pycparser import parse_file
-from src.block import Block
-from src.new_functions import NewFunctions
+from block import Block
+from new_functions import NewFunctions
 import sys
 
 
@@ -23,7 +23,14 @@ def remove_tail_calls(filename):
 
 
 if __name__ == "__main__":
-    filename = "../c_files/main.c"
-    if len(sys.argv) > 1 and sys.argv[1]:
+    if len(sys.argv) > 2:
+        print("Wrong number of arguments. "
+              "The only accepted argument is the address of the input source file to be converted.")
+    elif len(sys.argv) < 2:
+        print("Input file not given.")
+    else:
         filename = sys.argv[1]
-    remove_tail_calls(filename=filename)
+        if os.path.exists(filename):
+            remove_tail_calls(filename=filename)
+        else:
+            print("Input file does not exist.")
