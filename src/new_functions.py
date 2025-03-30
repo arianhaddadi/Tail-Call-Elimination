@@ -1,7 +1,7 @@
 from block import Block
 from pycparser import c_ast
 import utils
-from utils import GlobalParameters
+from typing import Dict, List
 
 
 class NewFunctions:
@@ -13,7 +13,9 @@ class NewFunctions:
     """
 
     @staticmethod
-    def change_function_definitions(involved_functions, block_call_union):
+    def change_function_definitions(
+            involved_functions: Dict[str, utils.FunctionInfo],
+            block_call_union: c_ast.Decl) -> None:
         """
         Changes the definitions of involved functions so that they call the
         block function with correct inputs and returns the result. This helps
@@ -43,7 +45,8 @@ class NewFunctions:
             ].function_definition.body.block_items = block_items
 
     @staticmethod
-    def generate_params_assignments_in_frame(block_items, function_info):
+    def generate_params_assignments_in_frame(block_items: List[c_ast.Node],
+                                             function_info: utils.FunctionInfo) -> None:
         """
         Generates the parameters assignments for the frame
         For example, in a function named foo, if the function has two inputs
@@ -59,7 +62,7 @@ class NewFunctions:
         for param in function_args.params:
             param_name = c_ast.ID(param.name)
             frame_field = utils.generate_2d_struct_ref(
-                GlobalParameters.block_call_union_instance_name,
+                utils.GlobalParameters.block_call_union_instance_name,
                 function_name,
                 param.name,
             )
@@ -67,7 +70,8 @@ class NewFunctions:
             block_items.append(assignment)
 
     @staticmethod
-    def generate_return_stmt_in_new_functions(function_name):
+    def generate_return_stmt_in_new_functions(
+            function_name: str) -> c_ast.Return:
         """
         Generates the return statements in the new functions.
         For example, in a function named foo, if the block call union is called
@@ -75,9 +79,9 @@ class NewFunctions:
             return frame.foo.result
         """
         return_expr = utils.generate_2d_struct_ref(
-            GlobalParameters.block_call_union_instance_name,
+            utils.GlobalParameters.block_call_union_instance_name,
             function_name,
-            GlobalParameters.function_return_val_name,
+            utils.GlobalParameters.function_return_val_name,
         )
 
         return_stmt = c_ast.Return(return_expr)

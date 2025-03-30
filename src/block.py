@@ -2,6 +2,7 @@ from utils import GlobalParameters
 from pycparser import c_ast
 from copy import deepcopy
 import utils
+from typing import Dict, List
 
 
 class Block:
@@ -16,7 +17,8 @@ class Block:
     """
 
     @staticmethod
-    def generate_block_call_union(involved_functions):
+    def generate_block_call_union(
+            involved_functions: Dict[str, utils.FunctionInfo]) -> c_ast.Decl:
         """
         This function generates the union that contains all the involved
         function's call structs. For example if the involved functions are foo
@@ -42,7 +44,7 @@ class Block:
         return union
 
     @staticmethod
-    def generate_block_function_index_arg():
+    def generate_block_function_index_arg() -> c_ast.Decl:
         """
         In the block function declaration, the first parameters is the index of
         the function that initially called the block function. In order to make
@@ -61,7 +63,7 @@ class Block:
         return declaration
 
     @staticmethod
-    def generate_block_function_union_arg():
+    def generate_block_function_union_arg() -> c_ast.Decl:
         """
         In the block function declaration, the second parameters is the union
         block_call. In order to make the code cleaner, the logic for generating
@@ -95,7 +97,7 @@ class Block:
         return declaration
 
     @staticmethod
-    def generate_block_function_declaration():
+    def generate_block_function_declaration() -> c_ast.Decl:
         """
         Generates the declaration of the block function. For instance, it can
         be like this:
@@ -127,7 +129,8 @@ class Block:
         return function_declaration
 
     @staticmethod
-    def generate_arguments_assignments(function_info):
+    def generate_arguments_assignments(function_info: utils.FunctionInfo) -> \
+            List[c_ast.Decl]:
         """
         Generates the argument assignment in the beginning of the case statement
         for each of the functions. For example, if the function has the
@@ -155,7 +158,9 @@ class Block:
         return assignments
 
     @staticmethod
-    def convert_return_in_block(function_name, return_expr, func_def_map):
+    def convert_return_in_block(function_name: str, return_expr: c_ast.Return,
+                                func_def_map: Dict[str, c_ast.FuncDef]) -> List[
+        c_ast.Node]:
         """
         Converts the return statement of original function to the form it should
         have in block function.
@@ -206,7 +211,8 @@ class Block:
         return items
 
     @staticmethod
-    def traverse(items, function_name, func_def_map):
+    def traverse(items: List[c_ast.Node], function_name: str,
+                 func_def_map: Dict[str, c_ast.FuncDef]) -> List[c_ast.Node]:
         """
         Recursively traverses the body of the function.
         This is necessary because the return statements of the functions need to
@@ -242,9 +248,9 @@ class Block:
                         )
                 new_items.append(item_clone)
             elif (
-                isinstance(item, c_ast.While)
-                or isinstance(item, c_ast.For)
-                or isinstance(item, c_ast.Switch)
+                    isinstance(item, c_ast.While)
+                    or isinstance(item, c_ast.For)
+                    or isinstance(item, c_ast.Switch)
             ):
                 item_clone = deepcopy(item)
                 if item.stmt is not None:
@@ -264,7 +270,9 @@ class Block:
         return new_items
 
     @staticmethod
-    def generate_function_case_body_in_block(function_info, func_def_map):
+    def generate_function_case_body_in_block(
+            function_info: utils.FunctionInfo,
+            func_def_map: Dict[str, c_ast.FuncDef]) -> List[c_ast.Node]:
         """
         Generates the case statement body for each involved function.
         generate_function_case_in_block wraps a case statement around the result
@@ -282,7 +290,9 @@ class Block:
         return argument_assignments + body_items
 
     @staticmethod
-    def generate_function_case_in_block(function_info, func_def_map):
+    def generate_function_case_in_block(
+            function_info: utils.FunctionInfo,
+            func_def_map: Dict[str, c_ast.FuncDef]) -> c_ast.Label:
         """Generates the case statement for each involved function."""
         case_body = Block.generate_function_case_body_in_block(
             function_info, func_def_map
@@ -294,7 +304,9 @@ class Block:
         return label
 
     @staticmethod
-    def generate_block_function_definition(involved_functions, func_def_map):
+    def generate_block_function_definition(
+            involved_functions: Dict[str, utils.FunctionInfo],
+            func_def_map: Dict[str, c_ast.FuncDef]) -> c_ast.Compound:
         """Generates the block function's body."""
         functions_bodies = [
             Block.generate_function_case_in_block(
@@ -309,7 +321,9 @@ class Block:
         return body
 
     @staticmethod
-    def generate_block_function(involved_functions, func_def_map):
+    def generate_block_function(
+            involved_functions: Dict[str, utils.FunctionInfo],
+            func_def_map: Dict[str, c_ast.FuncDef]) -> c_ast.FuncDef:
         """Generates the block function in its entirety"""
         function_declaration = Block.generate_block_function_declaration()
         function_body = Block.generate_block_function_definition(
@@ -321,7 +335,8 @@ class Block:
         return block_function
 
     @staticmethod
-    def generate_block_call_union_instance(block_call_union):
+    def generate_block_call_union_instance(
+            block_call_union: c_ast.Decl) -> c_ast.Decl:
         """
         Generates an instance of the union that is passed to the block function
         """
@@ -335,10 +350,10 @@ class Block:
         return instance
 
     @staticmethod
-    def generate_block_call_stmt(index_label):
+    def generate_block_call_stmt(index_label: str) -> c_ast.FuncCall:
         """
         Generates the statement that calls the block function.
-        For example, if the function is called foo, this statement would be
+        For example, if the function is called foo, this statement will become
             block(foo_INDEX, &frame);
         """
         block_call_struct_name = c_ast.ID(

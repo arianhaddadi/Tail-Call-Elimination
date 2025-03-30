@@ -1,14 +1,21 @@
 from pycparser import c_ast, c_generator
 from copy import deepcopy
+from typing import Dict, List
 
 
 class FunctionInfo:
+    function_definition: c_ast.FuncDef
+    index: int
+    index_label: str
+    block_label: str
+    call_struct: c_ast.Decl
     """
     A class used to store information about the functions involved in the
     tail call process.
     """
 
-    def __init__(self, function_definition, index, function_call_struct):
+    def __init__(self, function_definition: c_ast.FuncDef, index: int,
+                 function_call_struct: c_ast.Decl) -> None:
         self.function_definition = function_definition
         self.index = index
         self.index_label = f"{function_definition.decl.name}_INDEX"
@@ -18,14 +25,13 @@ class FunctionInfo:
 
 class GlobalParameters:
     """A class for parametrizing constant names used in tail call elimination"""
-
     block_call_union_instance_name = "frame"
     block_call_union_name = "block_call"
     function_return_val_name = "result"
     block_name = "block"
 
 
-def generate_function_call_struct(function):
+def generate_function_call_struct(function: c_ast.FuncDef) -> c_ast.Decl:
     """
     Generate the struct that stores the parameters and return value of
     the function.
@@ -60,13 +66,13 @@ def generate_function_call_struct(function):
     return struct
 
 
-def generate_function_info(function, index):
+def generate_function_info(function: c_ast.FuncDef, index: int) -> FunctionInfo:
     """Generates the instance of FunctionInfo class for the given function."""
     function_call_struct = generate_function_call_struct(function)
     return FunctionInfo(function, index, function_call_struct)
 
 
-def remove_and_save_directives(filename, temp_filename):
+def remove_and_save_directives(filename: str, temp_filename: str) -> List[str]:
     """
     Removes the directives from the given file as Pycparser does not support
     directives and saves them in a list in order to add them to the final
@@ -98,7 +104,7 @@ def remove_and_save_directives(filename, temp_filename):
     return directives
 
 
-def get_functions_def_map(ast):
+def get_functions_def_map(ast: c_ast.FileAST) -> Dict[str, c_ast.FuncDef]:
     """
     Generate a mapping from the name of the function to its FuncDef.
     FuncDef instance is created by Pycparser when the source code is parsed
@@ -111,7 +117,9 @@ def get_functions_def_map(ast):
     return func_def_map
 
 
-def identify_involved_functions(ast, func_def_map):
+def identify_involved_functions(ast: c_ast.FileAST,
+                                func_def_map: Dict[str, c_ast.FuncDef]) \
+        -> Dict[str, FunctionInfo]:
     """
     Identify the functions that either tail call another function or are
     tail called by another function in order to add them to the block function.
@@ -120,12 +128,12 @@ def identify_involved_functions(ast, func_def_map):
     index = 0
     for item in ast.ext:
         if (
-            isinstance(item, c_ast.FuncDef)
-            and item.body.block_items is not None
+                isinstance(item, c_ast.FuncDef)
+                and item.body.block_items is not None
         ):
             for block_item in item.body.block_items:
                 if isinstance(block_item, c_ast.Return) and isinstance(
-                    block_item.expr, c_ast.FuncCall
+                        block_item.expr, c_ast.FuncCall
                 ):
                     caller_function_name = item.decl.name
                     called_function_name = block_item.expr.name.name
@@ -146,13 +154,13 @@ def identify_involved_functions(ast, func_def_map):
 
 
 def write_result_to_disk(
-    directives,
-    involved_functions,
-    block_call_union,
-    block_function,
-    ast,
-    filename,
-):
+        directives: List[str],
+        involved_functions: Dict[str, FunctionInfo],
+        block_call_union: c_ast.Decl,
+        block_function: c_ast.FuncDef,
+        ast: c_ast.FileAST,
+        filename: str,
+) -> None:
     """Write the final result of the tail call elimination process to disk."""
     file_content = ""
     visitor = c_generator.CGenerator()
@@ -170,18 +178,18 @@ def write_result_to_disk(
     file_content += "\n"
     for function in involved_functions:
         file_content += (
-            "extern "
-            + visitor.visit(
-                involved_functions[function].function_definition.decl
-            )
-            + ";\n"
+                "extern "
+                + visitor.visit(
+            involved_functions[function].function_definition.decl
+        )
+                + ";\n"
         )
 
     for function in involved_functions:
         file_content += (
-            "\n"
-            + visitor.visit(involved_functions[function].call_struct)
-            + ";\n"
+                "\n"
+                + visitor.visit(involved_functions[function].call_struct)
+                + ";\n"
         )
 
     file_content += "\n" + visitor.visit(block_call_union) + ";\n"
@@ -193,12 +201,12 @@ def write_result_to_disk(
 
 
 def generate_2d_struct_ref(
-    inner_struct_name,
-    inner_struct_field,
-    outer_struct_field,
-    inner_ptr=False,
-    outer_ptr=False,
-):
+        inner_struct_name: str,
+        inner_struct_field: str,
+        outer_struct_field: str,
+        inner_ptr: bool = False,
+        outer_ptr: bool = False,
+) -> c_ast.StructRef:
     """
     Generates a 2d struct ref.
     2d struct ref is like foo.bar.gar
